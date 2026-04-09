@@ -1,0 +1,133 @@
+```react
+import React, { useState } from 'react';
+import { ExternalLink, Send, ShieldAlert, Activity } from 'lucide-react';
+
+export default function App() {
+  const [number, setNumber] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [response, setResponse] = useState(null);
+  const [error, setError] = useState(null);
+
+  // আপনার দেওয়া তথ্য
+  const API_KEY = "da757ed385afc991a24b017fe106ea78";
+  const DASHBOARD_URL = "https://rakabro.nanobd.shop/dashboard.php";
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!number.trim()) {
+      setError("দয়া করে একটি সঠিক নম্বর দিন।");
+      return;
+    }
+
+    setLoading(true);
+    setResponse(null);
+    setError(null);
+
+    try {
+      // এপিআই রিকোয়েস্ট ইউআরএল
+      const url = `https://rakabro.nanobd.shop/api.php?key=${API_KEY}&number=${number}`;
+      
+      const res = await fetch(url);
+      const data = await res.text(); // JSON বা Text যাই হোক না কেন, রিড করবে
+      
+      setResponse(data || "সফলভাবে রিকোয়েস্ট পাঠানো হয়েছে, কিন্তু এপিআই থেকে কোনো টেক্সট আসেনি।");
+    } catch (err) {
+      console.error(err);
+      // ব্রাউজার থেকে থার্ড-পার্টি এপিআই কল করার সময় প্রায়ই CORS এরর হয়
+      setError("রিকোয়েস্ট ফেইল হয়েছে। এটি নেটওয়ার্ক সমস্যা বা API-এর CORS পলিসির কারণে হতে পারে।");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4 font-sans text-gray-800">
+      <div className="max-w-md w-full bg-white rounded-2xl shadow-xl overflow-hidden">
+        {/* হেডার অংশ */}
+        <div className="bg-blue-600 p-6 text-white text-center">
+          <div className="flex justify-center mb-3">
+            <Activity size={40} className="text-blue-200" />
+          </div>
+          <h1 className="text-2xl font-bold">এপিআই প্যানেল</h1>
+          <p className="text-blue-100 mt-1 text-sm">আপনার এপিআই রিকোয়েস্ট ম্যানেজ করুন</p>
+        </div>
+
+        <div className="p-6">
+          {/* ব্যালেন্স চেক বাটন */}
+          <div className="mb-6">
+            <a 
+              href={DASHBOARD_URL} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="w-full flex items-center justify-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 py-3 px-4 rounded-xl transition-colors font-semibold"
+            >
+              <span>ড্যাশবোর্ড ও ব্যালেন্স চেক</span>
+              <ExternalLink size={18} />
+            </a>
+          </div>
+
+          <hr className="border-gray-200 mb-6" />
+
+          {/* ফর্ম অংশ */}
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
+                ফোন নম্বর ইনপুট করুন
+              </label>
+              <input
+                type="text"
+                id="phone"
+                value={number}
+                onChange={(e) => setNumber(e.target.value)}
+                placeholder="যেমন: 01XXXXXXXXX"
+                className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                disabled={loading}
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className={`w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-white font-semibold transition-all ${
+                loading ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 shadow-md hover:shadow-lg'
+              }`}
+            >
+              {loading ? (
+                <span>অপেক্ষা করুন...</span>
+              ) : (
+                <>
+                  <span>সেন্ড রিকোয়েস্ট</span>
+                  <Send size={18} />
+                </>
+              )}
+            </button>
+          </form>
+
+          {/* ফলাফল দেখানো */}
+          {error && (
+            <div className="mt-4 p-4 bg-red-50 border-l-4 border-red-500 text-red-700 rounded-r-lg text-sm">
+              {error}
+            </div>
+          )}
+
+          {response && (
+            <div className="mt-4 p-4 bg-green-50 border-l-4 border-green-500 text-green-800 rounded-r-lg text-sm overflow-hidden break-words">
+              <strong>এপিআই রেসপন্স:</strong> <br />
+              {response}
+            </div>
+          )}
+
+          {/* সিকিউরিটি ওয়ার্নিং */}
+          <div className="mt-8 p-4 bg-yellow-50 rounded-xl flex gap-3 text-yellow-800 text-xs">
+            <ShieldAlert size={24} className="shrink-0 text-yellow-600" />
+            <p>
+              <strong>সতর্কতা:</strong> ক্লায়েন্ট-সাইড (HTML/JS) কোডে এপিআই কি (API Key) সরাসরি ব্যবহার করা নিরাপদ নয়। প্রোডাকশনে ব্যবহারের জন্য এটি সর্বদা ব্যাকএন্ড সার্ভারে রাখা উচিত।
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+```
