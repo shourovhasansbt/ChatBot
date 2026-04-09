@@ -1,133 +1,237 @@
-```react
-import React, { useState } from 'react';
-import { ExternalLink, Send, ShieldAlert, Activity } from 'lucide-react';
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>এপিআই প্যানেল</title>
+    <style>
+        /* বেসিক স্টাইল এবং রিসেট */
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background-color: #f3f4f6;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        
+        .card {
+            background-color: white;
+            max-width: 450px;
+            width: 100%;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
 
-export default function App() {
-  const [number, setNumber] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [response, setResponse] = useState(null);
-  const [error, setError] = useState(null);
+        /* হেডার ডিজাইন */
+        .header {
+            background-color: #2563eb;
+            color: white;
+            text-align: center;
+            padding: 24px;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+        .header p {
+            margin: 8px 0 0;
+            font-size: 14px;
+            color: #bfdbfe;
+        }
 
-  // আপনার দেওয়া তথ্য
-  const API_KEY = "da757ed385afc991a24b017fe106ea78";
-  const DASHBOARD_URL = "https://rakabro.nanobd.shop/dashboard.php";
+        .content {
+            padding: 24px;
+        }
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!number.trim()) {
-      setError("দয়া করে একটি সঠিক নম্বর দিন।");
-      return;
-    }
+        /* ড্যাশবোর্ড বাটন */
+        .btn-dashboard {
+            display: block;
+            text-align: center;
+            background-color: #f1f5f9;
+            color: #334155;
+            padding: 14px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: bold;
+            border: 1px solid #e2e8f0;
+            transition: background 0.3s;
+        }
+        .btn-dashboard:hover {
+            background-color: #e2e8f0;
+        }
 
-    setLoading(true);
-    setResponse(null);
-    setError(null);
+        .divider {
+            border: 0;
+            border-top: 1px solid #e2e8f0;
+            margin: 24px 0;
+        }
 
-    try {
-      // এপিআই রিকোয়েস্ট ইউআরএল
-      const url = `https://rakabro.nanobd.shop/api.php?key=${API_KEY}&number=${number}`;
-      
-      const res = await fetch(url);
-      const data = await res.text(); // JSON বা Text যাই হোক না কেন, রিড করবে
-      
-      setResponse(data || "সফলভাবে রিকোয়েস্ট পাঠানো হয়েছে, কিন্তু এপিআই থেকে কোনো টেক্সট আসেনি।");
-    } catch (err) {
-      console.error(err);
-      // ব্রাউজার থেকে থার্ড-পার্টি এপিআই কল করার সময় প্রায়ই CORS এরর হয়
-      setError("রিকোয়েস্ট ফেইল হয়েছে। এটি নেটওয়ার্ক সমস্যা বা API-এর CORS পলিসির কারণে হতে পারে।");
-    } finally {
-      setLoading(false);
-    }
-  };
+        /* ফর্ম ডিজাইন */
+        .form-group {
+            margin-bottom: 16px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+            color: #374151;
+            font-weight: 600;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            box-sizing: border-box;
+            font-size: 16px;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+        .form-group input:focus {
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
 
-  return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4 font-sans text-gray-800">
-      <div className="max-w-md w-full bg-white rounded-2xl shadow-xl overflow-hidden">
-        {/* হেডার অংশ */}
-        <div className="bg-blue-600 p-6 text-white text-center">
-          <div className="flex justify-center mb-3">
-            <Activity size={40} className="text-blue-200" />
-          </div>
-          <h1 className="text-2xl font-bold">এপিআই প্যানেল</h1>
-          <p className="text-blue-100 mt-1 text-sm">আপনার এপিআই রিকোয়েস্ট ম্যানেজ করুন</p>
+        /* সাবমিট বাটন */
+        .btn-submit {
+            width: 100%;
+            background-color: #2563eb;
+            color: white;
+            padding: 14px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        .btn-submit:hover {
+            background-color: #1d4ed8;
+        }
+        .btn-submit:disabled {
+            background-color: #93c5fd;
+            cursor: not-allowed;
+        }
+
+        /* এলার্ট এবং মেসেজ বক্স */
+        .alert {
+            padding: 16px;
+            border-radius: 8px;
+            margin-top: 20px;
+            font-size: 14px;
+            display: none; /* ডিফল্টভাবে লুকানো থাকবে */
+        }
+        .alert-error {
+            background-color: #fef2f2;
+            border-left: 4px solid #ef4444;
+            color: #b91c1c;
+        }
+        .alert-success {
+            background-color: #f0fdf4;
+            border-left: 4px solid #22c55e;
+            color: #166534;
+            word-break: break-all;
+        }
+
+        /* সিকিউরিটি ওয়ার্নিং */
+        .warning-box {
+            background-color: #fefce8;
+            border: 1px solid #fef08a;
+            padding: 16px;
+            border-radius: 8px;
+            margin-top: 24px;
+            font-size: 13px;
+            color: #854d0e;
+            line-height: 1.5;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="card">
+        <div class="header">
+            <h1>এপিআই প্যানেল</h1>
+            <p>আপনার এপিআই রিকোয়েস্ট ম্যানেজ করুন</p>
         </div>
-
-        <div className="p-6">
-          {/* ব্যালেন্স চেক বাটন */}
-          <div className="mb-6">
-            <a 
-              href={DASHBOARD_URL} 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="w-full flex items-center justify-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 py-3 px-4 rounded-xl transition-colors font-semibold"
-            >
-              <span>ড্যাশবোর্ড ও ব্যালেন্স চেক</span>
-              <ExternalLink size={18} />
+        
+        <div class="content">
+            <a href="https://rakabro.nanobd.shop/dashboard.php" target="_blank" class="btn-dashboard">
+                ড্যাশবোর্ড ও ব্যালেন্স চেক
             </a>
-          </div>
+            
+            <hr class="divider">
 
-          <hr className="border-gray-200 mb-6" />
+            <form id="apiForm">
+                <div class="form-group">
+                    <label for="phone">ফোন নম্বর ইনপুট করুন</label>
+                    <input type="text" id="phone" placeholder="যেমন: 01XXXXXXXXX" autocomplete="off" required>
+                </div>
+                <button type="submit" id="submitBtn" class="btn-submit">সেন্ড রিকোয়েস্ট</button>
+            </form>
 
-          {/* ফর্ম অংশ */}
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
-                ফোন নম্বর ইনপুট করুন
-              </label>
-              <input
-                type="text"
-                id="phone"
-                value={number}
-                onChange={(e) => setNumber(e.target.value)}
-                placeholder="যেমন: 01XXXXXXXXX"
-                className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-                disabled={loading}
-              />
+            <div id="errorAlert" class="alert alert-error"></div>
+            <div id="successAlert" class="alert alert-success"></div>
+
+            <div class="warning-box">
+                <strong>সতর্কতা:</strong> ক্লায়েন্ট-সাইড (HTML/JS) কোডে এপিআই কি সরাসরি ব্যবহার করা নিরাপদ নয়। প্রোডাকশনে ব্যবহারের জন্য এটি সর্বদা ব্যাকএন্ড সার্ভারে রাখা উচিত।
             </div>
-
-            <button
-              type="submit"
-              disabled={loading}
-              className={`w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-white font-semibold transition-all ${
-                loading ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 shadow-md hover:shadow-lg'
-              }`}
-            >
-              {loading ? (
-                <span>অপেক্ষা করুন...</span>
-              ) : (
-                <>
-                  <span>সেন্ড রিকোয়েস্ট</span>
-                  <Send size={18} />
-                </>
-              )}
-            </button>
-          </form>
-
-          {/* ফলাফল দেখানো */}
-          {error && (
-            <div className="mt-4 p-4 bg-red-50 border-l-4 border-red-500 text-red-700 rounded-r-lg text-sm">
-              {error}
-            </div>
-          )}
-
-          {response && (
-            <div className="mt-4 p-4 bg-green-50 border-l-4 border-green-500 text-green-800 rounded-r-lg text-sm overflow-hidden break-words">
-              <strong>এপিআই রেসপন্স:</strong> <br />
-              {response}
-            </div>
-          )}
-
-          {/* সিকিউরিটি ওয়ার্নিং */}
-          <div className="mt-8 p-4 bg-yellow-50 rounded-xl flex gap-3 text-yellow-800 text-xs">
-            <ShieldAlert size={24} className="shrink-0 text-yellow-600" />
-            <p>
-              <strong>সতর্কতা:</strong> ক্লায়েন্ট-সাইড (HTML/JS) কোডে এপিআই কি (API Key) সরাসরি ব্যবহার করা নিরাপদ নয়। প্রোডাকশনে ব্যবহারের জন্য এটি সর্বদা ব্যাকএন্ড সার্ভারে রাখা উচিত।
-            </p>
-          </div>
         </div>
-      </div>
     </div>
-  );
-}
 
-```
+    <script>
+        // আপনার দেওয়া এপিআই কি
+        const API_KEY = "da757ed385afc991a24b017fe106ea78";
+        
+        // ফর্ম সাবমিট ইভেন্ট হ্যান্ডলার
+        document.getElementById('apiForm').addEventListener('submit', async function(e) {
+            e.preventDefault(); // পেজ রিলোড হওয়া বন্ধ করবে
+            
+            const number = document.getElementById('phone').value.trim();
+            const submitBtn = document.getElementById('submitBtn');
+            const errorAlert = document.getElementById('errorAlert');
+            const successAlert = document.getElementById('successAlert');
+
+            // আগের মেসেজগুলো লুকিয়ে ফেলা
+            errorAlert.style.display = 'none';
+            successAlert.style.display = 'none';
+
+            if (!number) {
+                errorAlert.textContent = "দয়া করে একটি সঠিক নম্বর দিন।";
+                errorAlert.style.display = 'block';
+                return;
+            }
+
+            // লোডিং স্ট্যাটাস চালু করা
+            submitBtn.disabled = true;
+            submitBtn.textContent = "অপেক্ষা করুন...";
+
+            try {
+                // এপিআই ইউআরএল
+                const url = `https://rakabro.nanobd.shop/api.php?key=${API_KEY}&number=${number}`;
+                
+                const response = await fetch(url);
+                const data = await response.text();
+                
+                // সফল হলে রেসপন্স দেখানো
+                successAlert.innerHTML = `<strong>এপিআই রেসপন্স:</strong><br><br>${data || "সফলভাবে রিকোয়েস্ট পাঠানো হয়েছে!"}`;
+                successAlert.style.display = 'block';
+            } catch (err) {
+                // কোনো এরর হলে (যেমন CORS বা ইন্টারনেট না থাকলে)
+                errorAlert.textContent = "রিকোয়েস্ট ফেইল হয়েছে। এটি নেটওয়ার্ক সমস্যা বা CORS পলিসির কারণে হতে পারে।";
+                errorAlert.style.display = 'block';
+                console.error("API Error:", err);
+            } finally {
+                // কাজ শেষ হলে বাটন আবার স্বাভাবিক করা
+                submitBtn.disabled = false;
+                submitBtn.textContent = "সেন্ড রিকোয়েস্ট";
+            }
+        });
+    </script>
+
+</body>
+</html>
