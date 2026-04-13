@@ -3,8 +3,8 @@ import time
 import threading
 import requests
 
-# আপনার দেওয়া বটের টোকেন
-BOT_TOKEN = '7965067274:AAHL0qWdfci9bD0HwsjNocjTX3K0O4XnBjg'
+# আপনার নতুন দেওয়া বটের টোকেন
+BOT_TOKEN = '8156508378:AAHlPdQbB21VTJECQ_HN7OGFnnH9Idamzx4'
 bot = telebot.TeleBot(BOT_TOKEN)
 
 # আনলিমিটেড টাস্ক ট্র্যাক করার জন্য ডিকশনারি
