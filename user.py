@@ -3,6 +3,7 @@ import sqlite3
 import requests
 import random
 import string
+from datetime import datetime
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup, KeyboardButton
 
 # --- কনফিগারেশন ---
@@ -23,8 +24,17 @@ BOT_USERNAME = bot_info.username
 conn = sqlite3.connect('bot_database.db', check_same_thread=False)
 cursor = conn.cursor()
 
-cursor.execute('''CREATE TABLE IF NOT EXISTS users (user_id INTEGER PRIMARY KEY, credits INTEGER DEFAULT 5)''')
+cursor.execute('''CREATE TABLE IF NOT EXISTS users (user_id INTEGER PRIMARY KEY, credits INTEGER DEFAULT 2)''')
 cursor.execute('''CREATE TABLE IF NOT EXISTS redeem_codes (code TEXT PRIMARY KEY, amount INTEGER, uses_left INTEGER)''')
+cursor.execute('''CREATE TABLE IF NOT EXISTS redeemed_history (user_id INTEGER, code TEXT)''') # কে কোন কোড ব্যবহার করেছে তার রেকর্ড
+
+# Daily claim এর জন্য কলাম চেক করে অ্যাড করা
+try:
+    cursor.execute("ALTER TABLE users ADD COLUMN last_claim TEXT DEFAULT ''")
+    conn.commit()
+except:
+    pass
+
 conn.commit()
 
 # --- ডাটাবেস ফাংশন ---
@@ -52,8 +62,9 @@ def check_joined(user_id):
 # --- সিম্পল মেনু কীবোর্ড ---
 def get_main_menu():
     markup = ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
-    markup.add(KeyboardButton("🚀 Send SMS")) # বড় করে উপরে থাকবে
-    markup.add(KeyboardButton("👥 Referral"), KeyboardButton("🎁 Redeem Code")) # নিচে দুইটা পাশাপাশি
+    markup.add(KeyboardButton("🚀 Send SMS")) 
+    markup.add(KeyboardButton("👥 Referral"), KeyboardButton("🎁 Redeem Code"))
+    markup.add(KeyboardButton("🎯 Daily Bonus")) # ডেইলি বোনাস বাটন
     return markup
 
 def get_join_markup():
@@ -72,7 +83,8 @@ def send_welcome(message):
     user = cursor.fetchone()
     
     if not user:
-        cursor.execute("INSERT INTO users (user_id, credits) VALUES (?, ?)", (user_id, 5))
+        # নতুন ইউজারের জন্য ২ ক্রেডিট
+        cursor.execute("INSERT INTO users (user_id, credits, last_claim) VALUES (?, ?, ?)", (user_id, 2, ""))
         conn.commit()
         
         # রেফারেল চেক
@@ -81,8 +93,8 @@ def send_welcome(message):
             try:
                 referrer_id = int(args[1].split("_")[1])
                 if referrer_id != user_id:
-                    update_credits(referrer_id, 5)
-                    bot.send_message(referrer_id, f"🎉 আপনার রেফার লিংক দিয়ে একজন জয়েন করেছে! আপনি 5 ক্রেডিট পেয়েছেন।\nবর্তমান ক্রেডিট: {get_user_credits(referrer_id)}")
+                    update_credits(referrer_id, 2) # রেফার বোনাস ২ করা হলো
+                    bot.send_message(referrer_id, f"🎉 আপনার রেফার লিংক দিয়ে একজন জয়েন করেছে! আপনি 2 ক্রেডিট পেয়েছেন।\nবর্তমান ক্রেডিট: {get_user_credits(referrer_id)}")
             except:
                 pass
     
@@ -90,7 +102,8 @@ def send_welcome(message):
         bot.send_message(user_id, "⚠️ Please join our channels to use the bot!", reply_markup=get_join_markup())
         return
 
-    bot.reply_to(message, "✅ Welcome back!", reply_markup=get_main_menu())
+    # ওয়েলকাম মেসেজে ২ ক্রেডিট লেখা হলো
+    bot.reply_to(message, f"👋 হ্যালো!\nনতুন ইউজার হিসেবে আপনি ২ ফ্রি ক্রেডিট পেয়েছেন!\n\nবর্তমান ক্রেডিট: {get_user_credits(user_id)}", reply_markup=get_main_menu())
 
 # --- Joined Button Callback ---
 @bot.callback_query_handler(func=lambda call: call.data == "check_join")
@@ -106,15 +119,35 @@ def check_join_callback(call):
 # মেনু বাটনের কাজ 
 # ==========================================
 
-# ১. Referral
+# ১. Daily Bonus
+@bot.message_handler(func=lambda message: message.text == '🎯 Daily Bonus')
+def daily_bonus_btn(message):
+    user_id = message.chat.id
+    cursor.execute("SELECT credits, last_claim FROM users WHERE user_id=?", (user_id,))
+    res = cursor.fetchone()
+    if not res:
+        return
+        
+    credits, last_claim = res[0], res[1]
+    today = datetime.now().strftime("%Y-%m-%d")
+    
+    if last_claim == today:
+        bot.send_message(user_id, "❌ আপনি আজকের বোনাস ইতিমধ্যে নিয়ে নিয়েছেন। আগামীকাল আবার চেষ্টা করুন!")
+    else:
+        update_credits(user_id, 1) # ডেইলি ১ ক্রেডিট বোনাস
+        cursor.execute("UPDATE users SET last_claim = ? WHERE user_id=?", (today, user_id))
+        conn.commit()
+        bot.send_message(user_id, f"🎉 অভিনন্দন! আপনি আজকের <b>Daily Bonus (1 Credit)</b> পেয়েছেন!\nবর্তমান ক্রেডিট: {credits + 1}", parse_mode="HTML")
+
+# ২. Referral
 @bot.message_handler(func=lambda message: message.text == '👥 Referral')
 def referral_btn(message):
     user_id = message.chat.id
     ref_link = f"https://t.me/{BOT_USERNAME}?start=ref_{user_id}"
-    text = f"🎁 <b>Refer & Earn</b>\n\nআপনার বন্ধুদের ইনভাইট করুন এবং প্রতি রেফারে <b>5 ক্রেডিট</b> পান!\n\nআপনার রেফারেল লিংক (ক্লিক করলেই কপি হবে):\n<code>{ref_link}</code>\n\n💰 বর্তমান ক্রেডিট: {get_user_credits(user_id)}"
+    text = f"🎁 <b>Refer & Earn</b>\n\nআপনার বন্ধুদের ইনভাইট করুন এবং প্রতি রেফারে <b>2 ক্রেডিট</b> পান!\n\nআপনার রেফারেল লিংক (ক্লিক করলেই কপি হবে):\n<code>{ref_link}</code>\n\n💰 বর্তমান ক্রেডিট: {get_user_credits(user_id)}"
     bot.send_message(user_id, text, parse_mode="HTML")
 
-# ২. Redeem Code
+# ৩. Redeem Code
 @bot.message_handler(func=lambda message: message.text == '🎁 Redeem Code' or message.text == '/redeem')
 def redeem_code_start(message):
     msg = bot.reply_to(message, "🎟 আপনার রিডিম কোডটি নিচে টাইপ করুন:")
@@ -124,20 +157,30 @@ def process_redeem(message):
     user_id = message.chat.id
     code = message.text.strip()
     
+    # চেক করা হচ্ছে ইউজার আগে এই কোড ব্যবহার করেছে কিনা
+    cursor.execute("SELECT * FROM redeemed_history WHERE user_id=? AND code=?", (user_id, code))
+    if cursor.fetchone():
+        bot.reply_to(message, "❌ আপনি ইতিমধ্যে এই কোডটি ব্যবহার করেছেন! একটি কোড মাত্র একবার ব্যবহার করা যায়।")
+        return
+    
     cursor.execute("SELECT amount, uses_left FROM redeem_codes WHERE code=?", (code,))
     res = cursor.fetchone()
     
     if res and res[1] > 0:
         amount = res[0]
         uses_left = res[1] - 1
+        
+        # ক্রেডিট আপডেট, রিডিম লিমিট কমানো এবং রেকর্ড রাখা
         update_credits(user_id, amount)
         cursor.execute("UPDATE redeem_codes SET uses_left=? WHERE code=?", (uses_left, code))
+        cursor.execute("INSERT INTO redeemed_history (user_id, code) VALUES (?, ?)", (user_id, code))
         conn.commit()
+        
         bot.reply_to(message, f"✅ অভিনন্দন! আপনি <b>{amount}</b> ক্রেডিট পেয়েছেন!\nবর্তমান ক্রেডিট: {get_user_credits(user_id)}", parse_mode="HTML")
     else:
         bot.reply_to(message, "❌ কোডটি ভুল বা ইতিমধ্যে ব্যবহার শেষ হয়ে গেছে।")
 
-# ৩. Send SMS (ক্লিক করলেই নাম্বার ও মেসেজ চাইবে)
+# ৪. Send SMS (ক্লিক করলেই নাম্বার ও মেসেজ চাইবে)
 user_sms_data = {}
 
 @bot.message_handler(func=lambda message: message.text == '🚀 Send SMS' or message.text == '/sms')
