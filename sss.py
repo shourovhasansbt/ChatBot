@@ -4,7 +4,7 @@ import threading
 import requests
 
 # আপনার নতুন দেওয়া বটের টোকেন
-BOT_TOKEN = '8156508378:AAHlPdQbB21VTJECQ_HN7OGFnnH9Idamzx4'
+BOT_TOKEN = '8681208910:AAFNg1jyt6S4z6BvltTRaqh151uWcyOOtS0'
 bot = telebot.TeleBot(BOT_TOKEN)
 
 # আনলিমিটেড টাস্ক ট্র্যাক করার জন্য ডিকশনারি
