@@ -210,6 +210,13 @@ def send_final_sms(message):
     sms_text = message.text
     phone = user_sms_data[user_id]['phone']
     
+    # ১০০ শব্দের লিমিট চেক
+    word_count = len(sms_text.split())
+    if word_count > 100:
+        msg = bot.reply_to(message, f"❌ আপনার মেসেজটি অনেক বড়! আপনি {word_count} শব্দ লিখেছেন।\nদয়া করে ১০০ শব্দের মধ্যে মেসেজটি পুনরায় টাইপ করুন:")
+        bot.register_next_step_handler(msg, send_final_sms) # আবার নতুন করে ইনপুট নেবে
+        return
+    
     bot.send_message(user_id, "⏳ মেসেজ পাঠানো হচ্ছে, অপেক্ষা করুন...")
     
     params = {
