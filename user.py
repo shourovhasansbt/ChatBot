@@ -8,8 +8,8 @@ from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 # --- কনফিগারেশন ---
 BOT_TOKEN = "8283539194:AAErOtM0toRQR9ILvYvf-oLNDtsaFfa8_QM"
 CHANNEL_USERNAME = "@teamgitgo" # যে চ্যানেলে জয়েন করতে হবে
-LOG_CHAT_ID = "-1003625052786"  # যে গ্রুপে/চ্যানেলে লগ যাবে (আগের PHP ফাইলের আইডি)
-ADMIN_ID = 7157240269 # এখানে আপনার নিজের টেলিগ্রাম ইউজার আইডি দিন (bot এ /myid লিখে আইডি পেতে পারেন)
+LOG_CHAT_ID = "-1003625052786"  # যে গ্রুপে/চ্যানেলে লগ যাবে
+ADMIN_ID = 7157240269 # আপনার অ্যাডমিন আইডি
 
 # SMS API কনফিগারেশন
 SMS_API_KEY = '$2y$10$SNO/yJjzH7CdEFup7c17mO01LTbOUNY83zaGNR5nZfhhANf6lckKC236'
@@ -78,7 +78,8 @@ def send_welcome(message):
     # জয়েন বাটন
     if not check_joined(user_id):
         markup = InlineKeyboardMarkup()
-        markup.add(InlineKeyboardButton("✅ Join Channel", url=f"https://t.me/boost/teamgitgo"))
+        # এখানে লিংকটি আপডেট করা হয়েছে
+        markup.add(InlineKeyboardButton("✅ Join Channel", url=f"https://t.me/teamgitgo"))
         bot.send_message(user_id, "⚠️ বট ব্যবহার করতে হলে প্রথমে আমাদের চ্যানেলে জয়েন করুন। জয়েন করার পর আবার /start দিন।", reply_markup=markup)
         return
 
